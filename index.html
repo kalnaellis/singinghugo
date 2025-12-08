@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>KINO MAJA — MODULES ON BUILD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+html,body{margin:0;padding:0;overflow:hidden;background:#000;}
+#webgl{width:100vw;height:100vh;display:block;}
+#vr{position:fixed;top:20px;left:20px;z-index:10;padding:10px 18px;background:#d62839;color:#fff;border:none;border-radius:6px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<button id="vr">ENTER VR</button>
+<canvas id="webgl"></canvas>
+
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js";
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/controls/OrbitControls.js";
+import { VRButton } from "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/webxr/VRButton.js";
+
+const canvas=document.getElementById("webgl");
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x050509);
+
+const camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,100);
+camera.position.set(0,2,8);
+
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.xr.enabled=true;
+
+document.getElementById("vr").onclick=()=>document.body.appendChild(VRButton.createButton(renderer));
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enablePan=false;
+
+scene.add(new THREE.AmbientLight(0xffffff,0.4));
+const spot=new THREE.SpotLight(0xffffff,1.5);
+spot.position.set(0,6,3);
+scene.add(spot);
+
+const room=new THREE.Group();
+scene.add(room);
+
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(9,16),
+  new THREE.MeshStandardMaterial({color:0x303034,roughness:0.9})
+);
+floor.rotation.x=-Math.PI/2;
+floor.position.z=-3;
+room.add(floor);
+
+const back=new THREE.Mesh(
+  new THREE.PlaneGeometry(9,4),
+  new THREE.MeshStandardMaterial({color:0x15151a})
+);
+back.position.set(0,2,-11);
+room.add(back);
+
+// VIDEO TEXTURE
+const video=document.createElement("video");
+video.src="https://www.w3schools.com/html/mov_bbb.mp4";
+video.muted=true;
+video.loop=true;
+video.play();
+
+const videoTex=new THREE.VideoTexture(video);
+
+const screen=new THREE.Mesh(
+  new THREE.PlaneGeometry(6.5,3.4),
+  new THREE.MeshBasicMaterial({map:videoTex})
+);
+screen.position.set(0,3,-10.9);
+room.add(screen);
+
+// movement
+const keys={};
+document.addEventListener("keydown",e=>keys[e.code]=true);
+document.addEventListener("keyup",e=>keys[e.code]=false);
+
+function move(dt){
+  const s=4;
+  if(keys.KeyW) camera.position.z-=s*dt;
+  if(keys.KeyS) camera.position.z+=s*dt;
+  if(keys.KeyA) camera.position.x-=s*dt;
+  if(keys.KeyD) camera.position.x+=s*dt;
+  if(keys.KeyQ) camera.position.y-=s*dt;
+  if(keys.KeyE) camera.position.y+=s*dt;
+}
+
+const clock=new THREE.Clock();
+renderer.setAnimationLoop(()=>{
+  const dt=clock.getDelta();
+  move(dt);
+  controls.update();
+  renderer.render(scene,camera);
+});
+
+window.addEventListener("resize",()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+</script>
+
+</body>
+</html>
